@@ -9,6 +9,11 @@ LOOKUP_TABLE = "lookup_table"
 LOOKUP_ID = "lookup_id"
 LOOKUP_FIELD = "lookup_fied"
 
+DATA_TABLE = "data_table"
+DATA_OBJECT_ID = "data_object_id"
+DATA_LOOKUP_ID = "data_lookup_id"
+DATA_VALUE = "data_value"
+
 def execute(command):
     connection = None
     try:
@@ -28,7 +33,7 @@ def execute(command):
         connection.commit()
 
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+        logger.error("Error during DB operation {0}".format(error))
         raise
 
     finally:
@@ -41,11 +46,18 @@ def create_lookup_table():
     command = "CREATE TABLE IF NOT EXISTS " \
                 + LOOKUP_TABLE + " (" \
                 + LOOKUP_ID + " SERIAL PRIMARY KEY," \
-                + LOOKUP_FIELD + " INTEGER NOT NULL" \
+                + LOOKUP_FIELD + " CHARACTER(255) NOT NULL" \
                 ")"
 
     execute(command=command)
 
+
 def create_string_table():
     logger.info("Creating lookup table if not exists")
-    pass
+    command = "CREATE TABLE IF NOT EXISTS " \
+              + DATA_TABLE + " (" \
+              + DATA_OBJECT_ID + " INTEGER NOT NULL," \
+              + DATA_LOOKUP_ID + " INTEGER NOT NULL REFERENCES " + LOOKUP_TABLE + "(" + LOOKUP_ID + ")," \
+              + DATA_VALUE + " CHARACTER(255) NOT NULL" \
+                ")"
+    execute(command=command)

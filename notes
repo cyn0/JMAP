@@ -1,0 +1,8 @@
+sudo su - postgres
+psql palani  -h 127.0.0.1 -d myproject
+
+
+
+Error:
+Cannot connect to server:
+https://stackoverflow.com/questions/32439167/psql-could-not-connect-to-server-connection-refused-error-when-connecting-to
