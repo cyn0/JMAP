@@ -14,10 +14,6 @@ DATA_OBJECT_ID = "data_object_id"
 DATA_LOOKUP_ID = "data_lookup_id"
 DATA_VALUE = "data_value"
 
-JSON_TABLE = "json_table"
-JSON_ID = "json_id"
-JSON_DATA = "json_data"
-
 def get_connection():
     db_config = config['db']
     connection = psycopg2.connect(database=db_config.name(),
@@ -27,15 +23,17 @@ def get_connection():
                                   port=db_config.port_num())
     return connection
 
-def execute(command):
+def execute(command, dict=None):
     connection = None
     try:
         connection = get_connection()
         cursor = connection.cursor()
 
         logger.info("About to execute command: {0}".format(command))
-
-        cursor.execute(command)
+        if dict is not None:
+            cursor.execute(command, dict)
+        else:
+            cursor.execute(command)
 
         cursor.close()
         connection.commit()
@@ -48,6 +46,16 @@ def execute(command):
         if connection is not None:
             connection.close()
 
+def insert_lookup_table(valuedict):
+    logger.info("Inserting into lookup table")
+    command = "INSERT INTO " + LOOKUP_TABLE +"("+ LOOKUP_ID + ", " + LOOKUP_FIELD + ")" \
+              " VALUES (%(id)s, %(field)s)"
+    execute(command=command, dict=valuedict)
+
+def select_all_lookup():
+    logger.info("Selecting from lookup table")
+    command = "SELECT * FROM " + LOOKUP_TABLE
+    execute(command=command)
 
 def add_part(part_name, vendor_list):
     insert_part = "INSERT INTO parts(part_name) VALUES(%s) RETURNING part_id;"
@@ -70,7 +78,6 @@ def add_part(part_name, vendor_list):
         if connection is not None:
             connection.close()
 
-
 def create_lookup_table():
     logger.info("Creating lookup table if not exists")
     command = "CREATE TABLE IF NOT EXISTS " \
@@ -81,7 +88,6 @@ def create_lookup_table():
 
     execute(command=command)
 
-
 def create_string_table():
     logger.info("Creating lookup table if not exists")
     command = "CREATE TABLE IF NOT EXISTS " \
@@ -89,16 +95,6 @@ def create_string_table():
               + DATA_OBJECT_ID + " INTEGER NOT NULL," \
               + DATA_LOOKUP_ID + " INTEGER NOT NULL REFERENCES " + LOOKUP_TABLE + "(" + LOOKUP_ID + ")," \
               + DATA_VALUE + " CHARACTER(255) NOT NULL" \
-                ")"
-    execute(command=command)
-
-#CREATE TABLE books ( id integer, data json );
-def create_json_table():
-    logger.info("Creating lookup table if not exists")
-    command = "CREATE TABLE IF NOT EXISTS " \
-              + JSON_TABLE + " (" \
-              + JSON_ID + " INTEGER NOT NULL," \
-              + JSON_DATA + " JSON NOT NULL" \
                 ")"
     execute(command=command)
 
