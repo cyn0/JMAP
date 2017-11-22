@@ -1,23 +1,37 @@
-{
-    "glossary": {
-        "title": "example glossary",
-      "GlossDiv": {
-            "title": "S",
-         "GlossList": {
-                "GlossEntry": {
-                    "ID": "SGML",
-               "SortAs": "SGML",
-               "GlossTerm": "Standard Generalized Markup Language",
-               "Acronym": "SGML",
-               "Abbrev": "ISO 8879:1986",
-               "GlossDef": {
-                        "para": "A meta-markup language, used to create markup languages such as DocBook.",
-                  "GlossSeeAlso": ["GML", "XML"]
-                    },
-               "GlossSee": "markup"
-                }
-            }
-        }
-    }
-}
-
+[
+  {
+      "a":"akey",
+      "b":"bkey",
+      "c":{
+            "d":"dkey",
+            "e":"ekey",
+            "d1":"dkey",
+            "e1":"ekey",
+            "d2":"dkey",
+            "e2":"ekey",
+            "d3":"dkey",
+            "e3":"ekey",
+            "d4":"dkey",
+            "e4":"ekey",
+            "d5":"dkey",
+            "e5":"ekey"
+          },
+      "f":{
+          "g":{
+              "h":"hkey",
+              "i":{
+                  "k":"kkey"
+              }
+          }
+      },
+      "j":"jkey",
+      "j1":"jkey",
+      "j2":"jkey",
+      "j3":"jkey",
+      "j5":"jkey",
+      "j4":"jkey",
+      "j6":"jkey",
+      "j7":"jkey",
+      "j8":"jkey"
+  }
+]
