@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 config = jsoncfg.load_config('configs.cfg')
 
-LOOKUP_TABLE = "lookup_tablee"
+LOOKUP_TABLE = "lookup_table"
 LOOKUP_ID = "lookup_id"
 LOOKUP_FIELD = "lookup_fied"
 
@@ -47,9 +47,9 @@ def create_lookup_table():
     logger.info("Creating lookup table if not exists")
     command = "CREATE TABLE IF NOT EXISTS " \
                 + LOOKUP_TABLE + " (" \
-                + LOOKUP_ID  + " CHARACTER(255) NOT NULL, " \
-                + LOOKUP_FIELD + " CHARACTER(255) NOT NULL, " \
-                + "PRIMARY KEY (" + LOOKUP_ID + ", " + LOOKUP_FIELD +"))"
+                + LOOKUP_ID + " SERIAL PRIMARY KEY," \
+                + LOOKUP_FIELD + " CHARACTER(255) NOT NULL" \
+                ")"
 
     execute(command=command)
 
