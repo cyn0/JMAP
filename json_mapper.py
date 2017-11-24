@@ -1,8 +1,5 @@
 import logging
-from core.db import select_all_lookup
-from core.db import insert_lookup_table
 from core.schema_builder import build_schema
-
 
 def initialise_service():
     logging.basicConfig(format='[%(asctime)s %(levelname)s]: %(message)s [%(filename)s:%(lineno)s - %(funcName)s]',
@@ -23,4 +20,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

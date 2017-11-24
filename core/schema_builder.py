@@ -1,10 +1,13 @@
-from db import create_lookup_table
-from db import create_string_table
+from jmapper import JMAPPER
+from json_util import JsonUtil
 
 def build_schema():
-    create_lookup_table()
-    create_string_table()
+    jmapper = JMAPPER()
+    jmapper.create_lookup_table()
+    jmapper.create_string_table()
 
+    json_util = JsonUtil()
+    json_util.create_json_table()
 
 
 
