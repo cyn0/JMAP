@@ -15,6 +15,10 @@ class BaseDB(object):
     def insert_json(self, jObject):
         pass
 
+    @abstractmethod
+    def update_json(self, key, value):
+        pass
+
     def get_connection(self):
         db_config = self.config['db']
         connection = psycopg2.connect(database=db_config.name(),
@@ -31,11 +35,7 @@ class BaseDB(object):
             cursor = connection.cursor()
 
             logger.info("About to execute command: {0}".format(command))
-            if params is not None:
-                cursor.execute(command, params)
-            else:
-                cursor.execute(command)
-
+            cursor.execute(command, params)
             cursor.close()
             connection.commit()
 
@@ -46,6 +46,14 @@ class BaseDB(object):
         finally:
             if connection is not None:
                 connection.close()
+
+    @abstractmethod
+    def drop_table(self):
+        pass
+
+    @abstractmethod
+    def create_index(self):
+        pass
 
     def __str__(self):
         return ""

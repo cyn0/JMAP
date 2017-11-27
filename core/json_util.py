@@ -22,8 +22,27 @@ class JsonUtil(BaseDB):
                 ")"
         self.execute(command=command)
 
+    def create_index(self):
+        logger.info("Creating indices on json table")
+
+        create_index_statement = "CREATE UNIQUE INDEX " + JSON_DATA + " ON " + JSON_TABLE + " (" + JSON_ID + ");"
+        self.execute(command=create_index_statement)
+
     def insert_json(self, jObject):
         logger.info("Inserting {0}".format(jObject))
         insert_statement = "INSERT INTO " + JSON_TABLE + "(json_data) VALUES(%s) RETURNING json_id;"
 
         self.execute(insert_statement, (json.dumps(jObject),))
+
+    def update_json(self, key, value):
+        key = "{" + key + "}"
+        value = '"'+ value +'"'
+        
+        #UPDATE json_table SET json_data = jsonb_set(json_data, '{fabk}', '"my-other-name"');
+        update_statement = "UPDATE json_table SET json_data = jsonb_set(json_data, %s, %s);"
+        self.execute(update_statement, (key, value))
+
+    def drop_table(self):
+        logger.info("Dropping json_table")
+        self.execute("DROP TABLE json_table;")
+

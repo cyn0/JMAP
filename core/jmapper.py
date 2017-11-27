@@ -30,7 +30,7 @@ class JMAPPER(BaseDB):
             connection = self.get_connection()
             cursor = connection.cursor()
             for item in jsonList:
-                logger.info("Inserting {0}".format(item))
+                #logger.info("Inserting {0}".format(item))
                 if item["type"] == "lookup":
                     cursor.execute(insert_statement_lookup, (item["lookup_id"], item["lookup_field"]))
                 else:
@@ -74,7 +74,7 @@ class JMAPPER(BaseDB):
         self.flattenJson(jObject, 0, "", flattenedList)
         self._insert_json_db(flattenedList)
 
-    def update(self, key, value):
+    def update_json(self, key, value):
         select_statement = "select lookup_id from lookup_table where lookup_fied=%s"
         update_statement = "UPDATE data_table SET data_value = %s WHERE data_lookup_id=%s;"
         connection = None
@@ -113,3 +113,34 @@ class JMAPPER(BaseDB):
                   + DATA_VALUE + " CHARACTER(255) NOT NULL" \
                                  ")"
         self.execute(command=command)
+
+    def create_index(self):
+        logger.info("Creating indices on data and lookup tables")
+
+        #b-tree index
+        # create_index_statement_lookup = "CREATE UNIQUE INDEX " + LOOKUP_ID + \
+        #                                 " ON " + LOOKUP_TABLE + \
+        #                                 " (" + LOOKUP_ID + ");"
+        # create_index_statement_data = "CREATE UNIQUE INDEX " + DATA_LOOKUP_ID + \
+        #                               " ON " + DATA_TABLE + \
+        #                               " (" + DATA_LOOKUP_ID + ");"
+
+        #Hash index
+        create_index_statement_lookup = "CREATE INDEX " + LOOKUP_ID +\
+                                        " ON " + LOOKUP_TABLE + \
+                                        " USING HASH" + \
+                                        " (" + LOOKUP_ID + ");"
+        create_index_statement_data = "CREATE INDEX " + DATA_LOOKUP_ID + \
+                                      " ON " + DATA_TABLE + \
+                                      " USING HASH" + \
+                                      " (" + DATA_LOOKUP_ID + ");"
+
+        self.execute(command=create_index_statement_lookup)
+        self.execute(command=create_index_statement_data)
+
+    def drop_table(self):
+        logger.info("Dropping lookup_table")
+        self.execute("DROP TABLE lookup_table CASCADE;")
+
+        logger.info("Dropping data_table")
+        self.execute("DROP TABLE data_table;")

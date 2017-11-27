@@ -29,14 +29,15 @@ def read_json():
 
 def update_json():
     start_time_1 = timeit.default_timer()
-    JMAPPER.update("fabl", "updated_fablkey")
+    JMAPPER.update_json("q", "updated_qkey")
     elapsed_1 = timeit.default_timer() - start_time_1
 
     start_time_2 = timeit.default_timer()
-    json_util.insert_json(item)
+    json_util.update_json("q", "updated_qkey")
     elapsed_2 = timeit.default_timer() - start_time_2
 
-    logger.info("Time taken to Insert: JMapper: {0}, Inbuilt json: {1}".format(elapsed_1, elapsed_2))
+    logger.info("Time taken to Update: JMapper: {0}, Inbuilt json: {1}".format(elapsed_1, elapsed_2))
 
 def run_sample_tests():
     insert_sample_json()
+    update_json()
