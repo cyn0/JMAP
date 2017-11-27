@@ -1,5 +1,6 @@
 from base_db import BaseDB
 import psycopg2
+import timeit
 import logging
 
 logger = logging.getLogger(__name__)
@@ -82,10 +83,18 @@ class JMAPPER(BaseDB):
             connection = self.get_connection()
             cursor = connection.cursor()
             logger.info("Updating {0} value as {1}".format(key, value))
+
+            start_time_1 = timeit.default_timer()
+
             cursor.execute(select_statement, (key, ))
             lookup_id = cursor.fetchone()[0]
             cursor.execute(update_statement, (value, lookup_id))
             connection.commit()
+
+            elapsed_1 = timeit.default_timer() - start_time_1
+
+            logger.info("Time taken to Update: JMapper: {0}".format(elapsed_1))
+
         except (Exception, psycopg2.DatabaseError) as error:
             logger.error("Error during DB operation {0}".format(error))
             raise
@@ -118,22 +127,22 @@ class JMAPPER(BaseDB):
         logger.info("Creating indices on data and lookup tables")
 
         #b-tree index
-        # create_index_statement_lookup = "CREATE UNIQUE INDEX " + LOOKUP_ID + \
-        #                                 " ON " + LOOKUP_TABLE + \
-        #                                 " (" + LOOKUP_ID + ");"
-        # create_index_statement_data = "CREATE UNIQUE INDEX " + DATA_LOOKUP_ID + \
-        #                               " ON " + DATA_TABLE + \
-        #                               " (" + DATA_LOOKUP_ID + ");"
+        create_index_statement_lookup = "CREATE UNIQUE INDEX " + LOOKUP_FIELD + \
+                                        " ON " + LOOKUP_TABLE + \
+                                        " (" + LOOKUP_ID + ");"
+        create_index_statement_data = "CREATE UNIQUE INDEX " + DATA_LOOKUP_ID + \
+                                      " ON " + DATA_TABLE + \
+                                      " (" + DATA_LOOKUP_ID + ");"
 
         #Hash index
-        create_index_statement_lookup = "CREATE INDEX " + LOOKUP_ID +\
-                                        " ON " + LOOKUP_TABLE + \
-                                        " USING HASH" + \
-                                        " (" + LOOKUP_ID + ");"
-        create_index_statement_data = "CREATE INDEX " + DATA_LOOKUP_ID + \
-                                      " ON " + DATA_TABLE + \
-                                      " USING HASH" + \
-                                      " (" + DATA_LOOKUP_ID + ");"
+        # create_index_statement_lookup = "CREATE INDEX " + LOOKUP_FIELD +\
+        #                                 " ON " + LOOKUP_TABLE + \
+        #                                 " USING HASH" + \
+        #                                 " (" + LOOKUP_ID + ");"
+        # create_index_statement_data = "CREATE INDEX " + DATA_LOOKUP_ID + \
+        #                               " ON " + DATA_TABLE + \
+        #                               " USING HASH" + \
+        #                               " (" + DATA_LOOKUP_ID + ");"
 
         self.execute(command=create_index_statement_lookup)
         self.execute(command=create_index_statement_data)

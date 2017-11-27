@@ -22,4 +22,4 @@ def stop_service():
 
 if __name__ == '__main__':
     main()
-    # stop_service()
+    stop_service()

@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import psycopg2
 import jsoncfg
+import timeit
 import logging
 
 logger = logging.getLogger(__name__)
@@ -31,14 +32,17 @@ class BaseDB(object):
     def execute(self, command, params=None):
         connection = None
         try:
+            logger.info("About to execute command: {0}".format(command))
+            start_time_1 = timeit.default_timer()
             connection = self.get_connection()
             cursor = connection.cursor()
 
-            logger.info("About to execute command: {0}".format(command))
             cursor.execute(command, params)
             cursor.close()
             connection.commit()
+            elapsed_1 = timeit.default_timer() - start_time_1
 
+            logger.info("Time taken to Execute command {0}: {1}".format(command, elapsed_1))
         except (Exception, psycopg2.DatabaseError) as error:
             logger.error("Error during DB operation {0}".format(error))
             raise
