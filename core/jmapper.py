@@ -3,11 +3,14 @@ import psycopg2
 import timeit
 import logging
 
+from jmapper_util import JMapperUtil
+
 logger = logging.getLogger(__name__)
 
 LOOKUP_TABLE = "lookup_table"
 LOOKUP_ID = "lookup_id"
 LOOKUP_FIELD = "lookup_fied"
+LOOKUP_FIELD_LEVEL = "lookup_fied_level"
 
 DATA_TABLE = "data_table"
 DATA_OBJECT_ID = "data_object_id"
@@ -19,9 +22,14 @@ ID_LENGTH = 8
 class JMAPPER(BaseDB):
     def __init__(self):
         super(JMAPPER, self).__init__()
+        self.jmapper_util = JMapperUtil(self)
+
+    def read_lookup(self, filter):
+        statement = "SELECT * from " + LOOKUP_TABLE + ";"
+        return self.execute(statement, returnsResult=True)
 
     def _insert_json_db(self, jsonList):
-        insert_statement_lookup = "INSERT INTO " + LOOKUP_TABLE + "(lookup_id, lookup_fied) VALUES(%s, %s);"
+        insert_statement_lookup = "INSERT INTO " + LOOKUP_TABLE + "(lookup_id, lookup_fied,lookup_fied_level) VALUES(%s, %s, %s);"
         insert_statement_data_with_id = "INSERT INTO " + DATA_TABLE + "(data_object_id, data_lookup_id, data_value) VALUES(%s, %s, %s);"
         insert_statement_data = "INSERT INTO " + DATA_TABLE + "(data_lookup_id, data_value) VALUES(%s, %s) RETURNING data_object_id;"
 
@@ -33,7 +41,7 @@ class JMAPPER(BaseDB):
             for item in jsonList:
                 #logger.info("Inserting {0}".format(item))
                 if item["type"] == "lookup":
-                    cursor.execute(insert_statement_lookup, (item["lookup_id"], item["lookup_field"]))
+                    cursor.execute(insert_statement_lookup, (item["lookup_id"], item["lookup_field"], item["lookup_fied_level"]))
                 else:
                     if data_object_id:
                         cursor.execute(insert_statement_data_with_id,
@@ -51,24 +59,73 @@ class JMAPPER(BaseDB):
             if connection is not None:
                 connection.close()
 
+
+    # def flattenJson(self, jsonObject, level, prefix, flattenedList):
+    #     from jmapper_util import JMapperUtil
+    #     self.jmapper_util = JMapperUtil()
+    #
+    #     cur = self.jmapper_util.get_prefix_current_int(prefix)
+    #
+    #     for k, v in jsonObject.iteritems():
+    #         cur = cur + 1
+    #
+    #         self.jmapper_util.incr_prefix_current_int(prefix)
+    #         cur_key_value = str(cur)
+    #         if cur < 10:   cur_key_value = "0" + cur_key_value
+    #
+    #         c_prefix = prefix + cur_key_value
+    #         no_of_zeros = ID_LENGTH - len(c_prefix)
+    #
+    #         field = int(c_prefix + "0" * no_of_zeros)
+    #         flattenedList.append({"lookup_id": field, "lookup_field": k, "type": "lookup","lookup_fied_level": level})
+    #
+    #         if isinstance(v, dict):
+    #             self.flattenJson(v, level + 1, c_prefix, flattenedList)
+    #
+    #         else:
+    #             flattenedList.append({"data_lookup_id": field, "data_value": v, "type": "data"})
+
     def flattenJson(self, jsonObject, level, prefix, flattenedList):
-        cur = 0
+        statement = "SELECT * from " + LOOKUP_TABLE + " WHERE lookup_fied=%s;"
+
+        cur = self.jmapper_util.get_prefix_current_int(prefix)
+
+        connection = self.get_connection()
+        cursor = connection.cursor()
+
         for k, v in jsonObject.iteritems():
-            cur = cur + 1
-            cur_key_value = str(cur)
-            if cur < 10:   cur_key_value = "0" + cur_key_value
+            cursor.execute(statement, (k, ))
 
-            c_prefix = prefix + cur_key_value
-            no_of_zeros = ID_LENGTH - len(c_prefix)
+            result = cursor.fetchone()
 
-            field = int(c_prefix + "0" * no_of_zeros)
-            flattenedList.append({"lookup_id": field, "lookup_field": k, "type": "lookup"})
+            c_prefix = ""
+            lookup_id = ""
+
+            if result is None:
+                cur = cur + 1
+
+                self.jmapper_util.incr_prefix_current_int(prefix)
+                cur_key_value = str(cur)
+                if cur < 10:   cur_key_value = "0" + cur_key_value
+
+                c_prefix = prefix + cur_key_value
+                no_of_zeros = ID_LENGTH - len(c_prefix)
+
+                lookup_id = int(c_prefix + "0" * no_of_zeros)
+                flattenedList.append({"lookup_id": lookup_id, "lookup_field": k, "type": "lookup","lookup_fied_level": level})
+            else:
+                lookup_id = result[0]
+                field = result[1]
+                level = result[2]
+                c_prefix = str(lookup_id)[:(level + 1) * 2]
 
             if isinstance(v, dict):
                 self.flattenJson(v, level + 1, c_prefix, flattenedList)
 
             else:
-                flattenedList.append({"data_lookup_id": field, "data_value": v, "type": "data"})
+                flattenedList.append({"data_lookup_id": lookup_id, "data_value": v, "type": "data"})
+
+        cursor.close()
 
     def insert_json(self, jObject):
         flattenedList = []
@@ -80,15 +137,15 @@ class JMAPPER(BaseDB):
         update_statement = "UPDATE data_table SET data_value = %s WHERE data_lookup_id=%s;"
         connection = None
         try:
+            logger.info("Updating {0} value as {1}".format(key, value))
+            start_time_1 = timeit.default_timer()
             connection = self.get_connection()
             cursor = connection.cursor()
-            logger.info("Updating {0} value as {1}".format(key, value))
-
-            start_time_1 = timeit.default_timer()
 
             cursor.execute(select_statement, (key, ))
             lookup_id = cursor.fetchone()[0]
             cursor.execute(update_statement, (value, lookup_id))
+            cursor.close()
             connection.commit()
 
             elapsed_1 = timeit.default_timer() - start_time_1
@@ -108,7 +165,8 @@ class JMAPPER(BaseDB):
         command = "CREATE TABLE IF NOT EXISTS " \
                   + LOOKUP_TABLE + " (" \
                   + LOOKUP_ID + " SERIAL PRIMARY KEY," \
-                  + LOOKUP_FIELD + " CHARACTER(255) NOT NULL" \
+                  + LOOKUP_FIELD + " CHARACTER(255) NOT NULL," \
+                  + LOOKUP_FIELD_LEVEL + " SMALLINT" \
                                    ")"
 
         self.execute(command=command)
@@ -129,8 +187,8 @@ class JMAPPER(BaseDB):
         #b-tree index
         create_index_statement_lookup = "CREATE UNIQUE INDEX " + LOOKUP_FIELD + \
                                         " ON " + LOOKUP_TABLE + \
-                                        " (" + LOOKUP_ID + ");"
-        create_index_statement_data = "CREATE UNIQUE INDEX " + DATA_LOOKUP_ID + \
+                                        " (" + LOOKUP_FIELD + ");"
+        create_index_statement_data = "CREATE INDEX " + DATA_LOOKUP_ID + \
                                       " ON " + DATA_TABLE + \
                                       " (" + DATA_LOOKUP_ID + ");"
 
@@ -144,8 +202,11 @@ class JMAPPER(BaseDB):
         #                               " USING HASH" + \
         #                               " (" + DATA_LOOKUP_ID + ");"
 
-        self.execute(command=create_index_statement_lookup)
-        self.execute(command=create_index_statement_data)
+        try:
+            self.execute(command=create_index_statement_lookup)
+            self.execute(command=create_index_statement_data)
+        except Exception as error:
+            logger.error("Ignoring error during Index operation {0}".format(error))
 
     def drop_table(self):
         logger.info("Dropping lookup_table")

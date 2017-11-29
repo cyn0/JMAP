@@ -26,7 +26,11 @@ class JsonUtil(BaseDB):
         logger.info("Creating indices on json table")
 
         create_index_statement = "CREATE UNIQUE INDEX " + JSON_DATA + " ON " + JSON_TABLE + " (" + JSON_ID + ");"
-        self.execute(command=create_index_statement)
+
+        try:
+            self.execute(command=create_index_statement)
+        except Exception as error:
+            logger.error("Ignoring error during Index operation {0}".format(error))
 
     def insert_json(self, jObject):
         logger.info("Inserting {0}".format(jObject))

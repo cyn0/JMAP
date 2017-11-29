@@ -2,7 +2,9 @@ import json
 from core.jmapper import JMAPPER
 from core.json_util import JsonUtil
 import timeit
+import random
 import logging
+from multiprocessing.dummy import Pool
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +22,26 @@ def insert_sample_json():
 def read_json():
     pass
 
-def update_json():
-    JMAPPER.update_json("q", "updated_qkey")
-    json_util.update_json("q", "updated_qkey")
+
+json_data = open('sample.json', 'r+')
+jdata = json.loads(json_data.read().decode("utf-8"))
+
+def update_json(p):
+    key = random.choice(jdata[0].keys())
+    JMAPPER.update_json(key, "updated_key")
+    json_util.update_json(key, "updated_key")
 
 def run_sample_tests():
     insert_sample_json()
-    update_json()
+    update_json("q")
+    #update_concurrency_test()
+
+def update_concurrency_test():
+    pool = Pool(processes=200)
+    arg=[]
+    for i in range(202):
+        arg.append("q")
+    pool.map(update_json, arg)
+    print "$"*100
+    pool.close()
+    pool.join()

@@ -1,5 +1,6 @@
 import logging
 from core.schema_builder import build_schema,delete_tables
+from core.jmapper_util import JMapperUtil
 
 def initialise_service():
     logging.basicConfig(format='[%(asctime)s %(levelname)s]: %(message)s [%(filename)s:%(lineno)s - %(funcName)s]',
@@ -18,7 +19,8 @@ def main():
     run_sample_tests()
 
 def stop_service():
-    delete_tables()
+    # delete_tables()
+    pass
 
 if __name__ == '__main__':
     main()

@@ -29,7 +29,7 @@ class BaseDB(object):
                                       port=db_config.port_num())
         return connection
 
-    def execute(self, command, params=None):
+    def execute(self, command, params=None, returnsResult=False):
         connection = None
         try:
             logger.info("About to execute command: {0}".format(command))
@@ -38,11 +38,18 @@ class BaseDB(object):
             cursor = connection.cursor()
 
             cursor.execute(command, params)
-            cursor.close()
+            # cursor.close()
             connection.commit()
             elapsed_1 = timeit.default_timer() - start_time_1
 
             logger.info("Time taken to Execute command {0}: {1}".format(command, elapsed_1))
+
+            result = []
+            if returnsResult:
+                result = cursor.fetchall()
+            cursor.close()
+            return result
+
         except (Exception, psycopg2.DatabaseError) as error:
             logger.error("Error during DB operation {0}".format(error))
             raise
