@@ -7,6 +7,9 @@ def build_schema():
     create_tables()
     create_indices()
 
+    jmapper.preprocessing()
+    json_util.preprocessing()
+
 def create_tables():
     jmapper.create_lookup_table()
     jmapper.create_string_table()
@@ -16,6 +19,7 @@ def create_tables():
 def create_indices():
     jmapper.create_index()
     json_util.create_index()
+
 
 def delete_tables():
     jmapper = JMAPPER()

@@ -50,3 +50,5 @@ class JsonUtil(BaseDB):
         logger.info("Dropping json_table")
         self.execute("DROP TABLE json_table;")
 
+    def preprocessing(self):
+        pass

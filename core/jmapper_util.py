@@ -2,11 +2,8 @@ class JMapperUtil:
     def __init__(self, jmapper):
         self.Jmapper = jmapper
         self.prefix_int_map = {}
-        self.build_memory_lookup()
-
 
     def build_memory_lookup(self):
-        print "build called!"
         lookup_rows = self.Jmapper.read_lookup(None)
         if lookup_rows is None:
             return

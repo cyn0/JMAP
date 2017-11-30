@@ -214,3 +214,6 @@ class JMAPPER(BaseDB):
 
         logger.info("Dropping data_table")
         self.execute("DROP TABLE data_table;")
+
+    def preprocessing(self):
+        self.jmapper_util.build_memory_lookup()
