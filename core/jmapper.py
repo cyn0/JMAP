@@ -132,19 +132,22 @@ class JMAPPER(BaseDB):
         self.flattenJson(jObject, 0, "", flattenedList)
         self._insert_json_db(flattenedList)
 
-    def update_json(self, key, value):
-        select_statement = "select lookup_id from lookup_table where lookup_fied=%s"
+    def update_json(self, keyPath, value):
+        select_statement = "select lookup_id from lookup_table where lookup_fied=%s AND lookup_id > %s"
         update_statement = "UPDATE data_table SET data_value = %s WHERE data_lookup_id=%s;"
         connection = None
         try:
-            logger.info("Updating {0} value as {1}".format(key, value))
+            logger.info("Updating {0} value as {1}".format(keyPath, value))
             start_time_1 = timeit.default_timer()
             connection = self.get_connection()
             cursor = connection.cursor()
 
-            cursor.execute(select_statement, (key, ))
-            lookup_id = cursor.fetchone()[0]
-            cursor.execute(update_statement, (value, lookup_id))
+            parentId = 0;
+            for item in keyPath:
+                parentId = self.jmapper_util.get_lookup_id(item, parentId)
+
+
+            cursor.execute(update_statement, (value, parentId, parentId + 1))
             cursor.close()
             connection.commit()
 
@@ -168,7 +171,7 @@ class JMAPPER(BaseDB):
                   + LOOKUP_FIELD + " CHARACTER(255) NOT NULL," \
                   + LOOKUP_FIELD_LEVEL + " SMALLINT" \
                                    ")"
-
+        logger.info("Creating lookup table lookup table")
         self.execute(command=command)
 
     def create_string_table(self):
