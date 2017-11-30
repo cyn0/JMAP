@@ -3,11 +3,8 @@ class JMapperUtil:
         self.Jmapper = jmapper
         self.prefix_int_map = {}
         self.memory_lookup_table = {}
-        self.build_memory_lookup()
-
 
     def build_memory_lookup(self):
-        print "build called!"
         lookup_rows = self.Jmapper.read_lookup(None)
         if lookup_rows is None:
             return

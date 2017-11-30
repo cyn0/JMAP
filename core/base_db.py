@@ -13,6 +13,10 @@ class BaseDB(object):
         self.config = jsoncfg.load_config('configs.cfg')
 
     @abstractmethod
+    def preprocessing(self):
+        pass
+
+    @abstractmethod
     def insert_json(self, jObject):
         pass
 
