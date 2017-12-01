@@ -4,6 +4,7 @@ import timeit
 import logging
 
 from jmapper_util import JMapperUtil
+from jmapper_util import ID_LENGTH
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +17,6 @@ DATA_TABLE = "data_table"
 DATA_OBJECT_ID = "data_object_id"
 DATA_LOOKUP_ID = "data_lookup_id"
 DATA_VALUE = "data_value"
-
-ID_LENGTH = 8
 
 class JMAPPER(BaseDB):
     def __init__(self):
@@ -133,8 +132,9 @@ class JMAPPER(BaseDB):
         self._insert_json_db(flattenedList)
 
     def update_json(self, keyPath, value):
-        select_statement = "select lookup_id from lookup_table where lookup_fied=%s AND lookup_id > %s"
-        update_statement = "UPDATE data_table SET data_value = %s WHERE data_lookup_id=%s;"
+        select_parent_id_statement = "SELECT " + LOOKUP_ID + ", " + LOOKUP_FIELD_LEVEL +" from " + LOOKUP_TABLE + " WHERE " + LOOKUP_FIELD + "=%s AND "+ LOOKUP_FIELD_LEVEL +  "=%s"
+        select_statement = "SELECT * from " + LOOKUP_TABLE + " WHERE " + LOOKUP_ID + " > %s AND " + LOOKUP_ID + " < %s"
+        update_statement = "UPDATE " + DATA_TABLE + " SET "+ DATA_VALUE +" = %s WHERE "+ DATA_LOOKUP_ID +" =%s;"
         connection = None
         try:
             logger.info("Updating {0} value as {1}".format(keyPath, value))
@@ -142,17 +142,20 @@ class JMAPPER(BaseDB):
             connection = self.get_connection()
             cursor = connection.cursor()
 
-            parentId = 0;
-            for item in keyPath:
-                parentId = self.jmapper_util.get_lookup_id(item, parentId)
+            cursor.execute(select_parent_id_statement, (keyPath[0], 0))
+            row = cursor.fetchone()
+            fieldId = row[0]
+            fieldLevel = row[1]
 
+            if(len(keyPath) > 1):
+                rows = self.execute(select_statement, (fieldId, self.jmapper_util.getNextId(fieldId, fieldLevel)), returnsResult=True)
+                fieldId = self.jmapper_util.getUpdateFieldId(rows, keyPath[1:])
 
-            cursor.execute(update_statement, (value, parentId, parentId + 1))
+            cursor.execute(update_statement, (value, fieldId))
             cursor.close()
             connection.commit()
 
             elapsed_1 = timeit.default_timer() - start_time_1
-
             logger.info("Time taken to Update: JMapper: {0}".format(elapsed_1))
 
         except (Exception, psycopg2.DatabaseError) as error:
@@ -168,7 +171,7 @@ class JMAPPER(BaseDB):
         command = "CREATE TABLE IF NOT EXISTS " \
                   + LOOKUP_TABLE + " (" \
                   + LOOKUP_ID + " SERIAL PRIMARY KEY," \
-                  + LOOKUP_FIELD + " CHARACTER(255) NOT NULL," \
+                  + LOOKUP_FIELD + " TEXT NOT NULL," \
                   + LOOKUP_FIELD_LEVEL + " SMALLINT" \
                                    ")"
         logger.info("Creating lookup table lookup table")
@@ -180,7 +183,7 @@ class JMAPPER(BaseDB):
                   + DATA_TABLE + " (" \
                   + DATA_OBJECT_ID + " SERIAL," \
                   + DATA_LOOKUP_ID + " INTEGER NOT NULL REFERENCES " + LOOKUP_TABLE + "(" + LOOKUP_ID + ")," \
-                  + DATA_VALUE + " CHARACTER(255) NOT NULL" \
+                  + DATA_VALUE + " TEXT NOT NULL" \
                                  ")"
         self.execute(command=command)
 
@@ -188,7 +191,7 @@ class JMAPPER(BaseDB):
         logger.info("Creating indices on data and lookup tables")
 
         #b-tree index
-        create_index_statement_lookup = "CREATE UNIQUE INDEX " + LOOKUP_FIELD + \
+        create_index_statement_lookup = "CREATE INDEX " + LOOKUP_FIELD + \
                                         " ON " + LOOKUP_TABLE + \
                                         " (" + LOOKUP_FIELD + ");"
         create_index_statement_data = "CREATE INDEX " + DATA_LOOKUP_ID + \

@@ -27,10 +27,10 @@ json_data = open('sample.json', 'r+')
 jdata = json.loads(json_data.read().decode("utf-8"))
 
 def update_json(p):
-    key = random.choice(jdata[0].keys())
-    keyPath = ['c', 'ca']
-   # JMAPPER.update_json(keyPath, "updated_key")
-    json_util.update_json(key, "updated_key")
+    #key = random.choice(jdata[0].keys())
+    keyPath = ["f", "fa", "fab"]
+    JMAPPER.update_json(keyPath, "sabaskar_updated_key")
+    json_util.update_json("f, fa, fab", "updated_key")
 
 def run_sample_tests():
     insert_sample_json()
