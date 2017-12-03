@@ -84,7 +84,7 @@ class JMAPPER(BaseDB):
     #         else:
     #             flattenedList.append({"data_lookup_id": field, "data_value": v, "type": "data"})
 
-    def flattenJson(self, jsonObject, level, prefix, flattenedList):
+    def flattenJson(self, jsonObject, level, prefix, file_name_prefix, flattenedList):
         statement = "SELECT * from " + LOOKUP_TABLE + " WHERE lookup_fied=%s;"
 
         cur = self.jmapper_util.get_prefix_current_int(prefix)
@@ -111,15 +111,16 @@ class JMAPPER(BaseDB):
                 no_of_zeros = ID_LENGTH - len(c_prefix)
 
                 lookup_id = int(c_prefix + "0" * no_of_zeros)
-                flattenedList.append({"lookup_id": lookup_id, "lookup_field": k, "type": "lookup","lookup_fied_level": level})
+                lookup_field =  self.jmapper_util.append_field_path(file_name_prefix, k)
+                flattenedList.append({"lookup_id": lookup_id, "lookup_field": lookup_field, "type": "lookup","lookup_fied_level": level})
             else:
                 lookup_id = result[0]
-                field = result[1]
+                lookup_field = result[1]
                 level = result[2]
                 c_prefix = str(lookup_id)[:(level + 1) * 2]
 
             if isinstance(v, dict):
-                self.flattenJson(v, level + 1, c_prefix, flattenedList)
+                self.flattenJson(v, level + 1, c_prefix, lookup_field, flattenedList)
 
             else:
                 flattenedList.append({"data_lookup_id": lookup_id, "data_value": v, "type": "data"})
@@ -128,13 +129,13 @@ class JMAPPER(BaseDB):
 
     def insert_json(self, jObject):
         flattenedList = []
-        self.flattenJson(jObject, 0, "", flattenedList)
+        self.flattenJson(jObject, 0, "", None, flattenedList)
         self._insert_json_db(flattenedList)
 
     def update_json(self, keyPath, value):
-        select_parent_id_statement = "SELECT " + LOOKUP_ID + ", " + LOOKUP_FIELD_LEVEL +" from " + LOOKUP_TABLE + " WHERE " + LOOKUP_FIELD + "=%s AND "+ LOOKUP_FIELD_LEVEL +  "=%s"
-        select_statement = "SELECT * from " + LOOKUP_TABLE + " WHERE " + LOOKUP_ID + " > %s AND " + LOOKUP_ID + " < %s"
+        select_lookupid_statement = "SELECT " + LOOKUP_ID + ", " + LOOKUP_FIELD_LEVEL +" from " + LOOKUP_TABLE + " WHERE " + LOOKUP_FIELD + "=%s"
         update_statement = "UPDATE " + DATA_TABLE + " SET "+ DATA_VALUE +" = %s WHERE "+ DATA_LOOKUP_ID +" =%s;"
+
         connection = None
         try:
             logger.info("Updating {0} value as {1}".format(keyPath, value))
@@ -142,14 +143,9 @@ class JMAPPER(BaseDB):
             connection = self.get_connection()
             cursor = connection.cursor()
 
-            cursor.execute(select_parent_id_statement, (keyPath[0], 0))
+            cursor.execute(select_lookupid_statement, (keyPath, ))
             row = cursor.fetchone()
             fieldId = row[0]
-            fieldLevel = row[1]
-
-            if(len(keyPath) > 1):
-                rows = self.execute(select_statement, (fieldId, self.jmapper_util.getNextId(fieldId, fieldLevel)), returnsResult=True)
-                fieldId = self.jmapper_util.getUpdateFieldId(rows, keyPath[1:])
 
             cursor.execute(update_statement, (value, fieldId))
             cursor.close()

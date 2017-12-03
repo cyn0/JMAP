@@ -29,21 +29,6 @@ class JMapperUtil:
             print item + "-->" + str(self.prefix_int_map[item])
         print "#" * 100
 
-    def getUpdateFieldId(self, lookup_rows, keyPath, fieldId = None, level = 1):
-        if lookup_rows is None:
-            return
-
-        for item in keyPath:
-            if fieldId is None:
-                row = next(row for row in lookup_rows if str(row[1]) == item)
-                fieldId = row[0]
-                level = row[2]
-
-            else:
-                row = next(row for row in lookup_rows if str(row[1]) == item and row[0] > fieldId and row[0] < (self.getNextId(fieldId, int(level))))
-                fieldId = row[0]
-                level = row[2]
-        return fieldId
 
     def get_prefix_current_int(self, prefix):
         if prefix in self.prefix_int_map:
@@ -51,18 +36,14 @@ class JMapperUtil:
         else:
             return 0
 
+    def append_field_path(self, prefix, curr):
+        if prefix is None:
+            return str(curr)
+        else:
+            return str(prefix + "." + curr)
+
     def incr_prefix_current_int(self, prefix):
         cur_val = 0
         if prefix in self.prefix_int_map:
             cur_val = self.prefix_int_map[prefix]
         self.prefix_int_map[prefix] = cur_val + 1
-
-    def getNextId(self, currId, level):
-        if len(str(currId)) == 7:
-            currId = "0" + str(currId)
-        level_field_val = currId[:(level + 1) * 2]
-        no_of_zeros = ID_LENGTH - len(level_field_val)
-        nextId = int(level_field_val) + 1
-
-        nextId = int(str(nextId) + "0" * no_of_zeros)
-        return nextId

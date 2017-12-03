@@ -12,7 +12,7 @@ JMAPPER = JMAPPER()
 json_util = JsonUtil()
 
 def insert_sample_json():
-    json_data = open('sample.json', 'r+')
+    json_data = open('simple', 'r+')
     jdata = json.loads(json_data.read().decode("utf-8"))
 
     for item in jdata:
@@ -28,9 +28,8 @@ jdata = json.loads(json_data.read().decode("utf-8"))
 
 def update_json(p):
     #key = random.choice(jdata[0].keys())
-    keyPath = ["f", "fa", "fab"]
-    JMAPPER.update_json(keyPath, "sabaskar_updated_key")
-    json_util.update_json("f, fa, fab", "updated_key")
+    JMAPPER.update_json("r.ra.rab.raba", "sabaskar_updated_key")
+    json_util.update_json("r, ra, rab, raba", "updated_key")
 
 def run_sample_tests():
     insert_sample_json()
