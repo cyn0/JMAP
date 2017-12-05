@@ -4,6 +4,7 @@ class JMapperUtil:
     def __init__(self, jmapper):
         self.Jmapper = jmapper
         self.prefix_int_map = {}
+        self.in_memory_lookup_map = {}
 
     def build_memory_lookup(self):
         lookup_rows = self.Jmapper.read_lookup(None)
@@ -14,6 +15,7 @@ class JMapperUtil:
             id = str(row[0])
             field = str(row[1])
             level = row[2]
+            self.in_memory_lookup_map[field] = id
             if len(id) == 7:
                 id = "0" +id
             level_field_val = id[:(level+1)*2]
@@ -29,6 +31,11 @@ class JMapperUtil:
             print item + "-->" + str(self.prefix_int_map[item])
         print "#" * 100
 
+    def get_field_id_from_memory(self, keyPath):
+        if keyPath in self.in_memory_lookup_map:
+            return self.in_memory_lookup_map[keyPath]
+        else:
+            return None
 
     def get_prefix_current_int(self, prefix):
         if prefix in self.prefix_int_map:

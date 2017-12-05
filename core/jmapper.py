@@ -19,6 +19,8 @@ DATA_LOOKUP_ID = "data_lookup_id"
 DATA_VALUE = "data_value"
 
 class JMAPPER(BaseDB):
+    update_concurrency_time = []
+    
     def __init__(self):
         super(JMAPPER, self).__init__()
         self.jmapper_util = JMapperUtil(self)
@@ -131,29 +133,34 @@ class JMAPPER(BaseDB):
         flattenedList = []
         self.flattenJson(jObject, 0, "", None, flattenedList)
         self._insert_json_db(flattenedList)
+        self.preprocessing() 
 
     def update_json(self, keyPath, value):
         select_lookupid_statement = "SELECT " + LOOKUP_ID + ", " + LOOKUP_FIELD_LEVEL +" from " + LOOKUP_TABLE + " WHERE " + LOOKUP_FIELD + "=%s"
         update_statement = "UPDATE " + DATA_TABLE + " SET "+ DATA_VALUE +" = %s WHERE "+ DATA_LOOKUP_ID +" =%s;"
-
         connection = None
         try:
-            logger.info("Updating {0} value as {1}".format(keyPath, value))
+            #logger.info("Updating {0} value as {1}".format(keyPath, value))
             start_time_1 = timeit.default_timer()
             connection = self.get_connection()
             cursor = connection.cursor()
 
-            cursor.execute(select_lookupid_statement, (keyPath, ))
-            row = cursor.fetchone()
-            fieldId = row[0]
+            fieldId = self.jmapper_util.get_field_id_from_memory(keyPath)
+            #fieldId = None
+            if fieldId is None:
+                cursor.execute(select_lookupid_statement, (keyPath, ))
+                row = cursor.fetchone()
+                if row is None:
+                    return
+                fieldId = row[0]
 
             cursor.execute(update_statement, (value, fieldId))
             cursor.close()
             connection.commit()
 
             elapsed_1 = timeit.default_timer() - start_time_1
-            logger.info("Time taken to Update: JMapper: {0}".format(elapsed_1))
-
+            logger.info("Updating {0} value as {1}. Time taken to Update: JMapper: {2}".format(keyPath, value, elapsed_1))
+            self.update_concurrency_time.append(elapsed_1)
         except (Exception, psycopg2.DatabaseError) as error:
             logger.error("Error during DB operation {0}".format(error))
             raise

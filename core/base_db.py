@@ -7,6 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class BaseDB(object):
+    update_concurrency_time = []
     __metaclass__ = ABCMeta
 
     def __init__(self):
@@ -33,7 +34,7 @@ class BaseDB(object):
                                       port=db_config.port_num())
         return connection
 
-    def execute(self, command, params=None, returnsResult=False):
+    def execute(self, command, params=None, shouldlogTime=False, returnsResult=False):
         connection = None
         try:
             logger.info("About to execute command: {0}".format(command))
@@ -47,7 +48,8 @@ class BaseDB(object):
             elapsed_1 = timeit.default_timer() - start_time_1
 
             logger.info("Time taken to Execute command {0}: {1}".format(command, elapsed_1))
-
+            if shouldlogTime == True:
+                self.update_concurrency_time.append(elapsed_1)
             result = []
             if returnsResult:
                 result = cursor.fetchall()

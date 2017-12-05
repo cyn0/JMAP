@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 JMAPPER = JMAPPER()
 json_util = JsonUtil()
+#BaseDB = BaseDB()
 
 def insert_sample_json():
     json_data = open('simple', 'r+')
@@ -22,14 +23,22 @@ def insert_sample_json():
 def read_json():
     pass
 
-
 json_data = open('sample.json', 'r+')
 jdata = json.loads(json_data.read().decode("utf-8"))
+jmapper_key = []
+
+def preprocess():
+    lookup_rows = JMAPPER.read_lookup(None)
+
+    for row in lookup_rows:
+        key = str(row[1])
+        jmapper_key.append(key)
 
 def update_json(p):
-    #key = random.choice(jdata[0].keys())
-    JMAPPER.update_json("r.ra.rab.raba", "sabaskar_updated_key")
-    json_util.update_json("r, ra, rab, raba", "updated_key")
+    #key = random.choice(jmapper_key)
+    key = "r.ra.rab.raba"
+    JMAPPER.update_json(key, "updated_key" + key)
+    json_util.update_json(key.replace(".", ", "), "updated_key" + key)
 
 def run_sample_tests():
     insert_sample_json()
@@ -37,11 +46,16 @@ def run_sample_tests():
     #update_concurrency_test()
 
 def update_concurrency_test():
-    pool = Pool(processes=200)
+    preprocess()
+    pool = Pool(processes=10)
     arg=[]
     for i in range(202):
         arg.append("q")
     pool.map(update_json, arg)
     print "$"*100
+    avg_jmapper = sum(JMAPPER.update_concurrency_time) /len(JMAPPER.update_concurrency_time)
+    print "Average taken by Jmapper to update 10 random rows is %s", avg_jmapper
+    avg_json = sum(JMAPPER.update_concurrency_time) /len(JMAPPER.update_concurrency_time)
+    print "Average taken by normal Postgress JSON Update to update 10 random rows is %s", avg_json
     pool.close()
     pool.join()
