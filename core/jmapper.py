@@ -95,7 +95,8 @@ class JMAPPER(BaseDB):
         cursor = connection.cursor()
 
         for k, v in jsonObject.iteritems():
-            cursor.execute(statement, (k, ))
+            lookup_field =  self.jmapper_util.append_field_path(file_name_prefix, k)
+            cursor.execute(statement, (lookup_field, ))
 
             result = cursor.fetchone()
 
@@ -104,6 +105,7 @@ class JMAPPER(BaseDB):
 
             if result is None:
                 cur = cur + 1
+                print "In if %s", lookup_field
 
                 self.jmapper_util.incr_prefix_current_int(prefix)
                 cur_key_value = str(cur)
@@ -113,9 +115,9 @@ class JMAPPER(BaseDB):
                 no_of_zeros = ID_LENGTH - len(c_prefix)
 
                 lookup_id = int(c_prefix + "0" * no_of_zeros)
-                lookup_field =  self.jmapper_util.append_field_path(file_name_prefix, k)
                 flattenedList.append({"lookup_id": lookup_id, "lookup_field": lookup_field, "type": "lookup","lookup_fied_level": level})
             else:
+                print "In else %s", lookup_field
                 lookup_id = result[0]
                 lookup_field = result[1]
                 level = result[2]
@@ -133,11 +135,11 @@ class JMAPPER(BaseDB):
         flattenedList = []
         self.flattenJson(jObject, 0, "", None, flattenedList)
         self._insert_json_db(flattenedList)
-        self.preprocessing() 
 
     def update_json(self, keyPath, value):
         select_lookupid_statement = "SELECT " + LOOKUP_ID + ", " + LOOKUP_FIELD_LEVEL +" from " + LOOKUP_TABLE + " WHERE " + LOOKUP_FIELD + "=%s"
         update_statement = "UPDATE " + DATA_TABLE + " SET "+ DATA_VALUE +" = %s WHERE "+ DATA_LOOKUP_ID +" =%s;"
+        
         connection = None
         try:
             #logger.info("Updating {0} value as {1}".format(keyPath, value))

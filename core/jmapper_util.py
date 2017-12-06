@@ -47,7 +47,7 @@ class JMapperUtil:
         if prefix is None:
             return str(curr)
         else:
-            return str(prefix + "." + curr)
+            return prefix + "." + curr
 
     def incr_prefix_current_int(self, prefix):
         cur_val = 0
