@@ -16,6 +16,7 @@ LOOKUP_FIELD_LEVEL = "lookup_fied_level"
 DATA_TABLE = "data_table"
 DATA_OBJECT_ID = "data_object_id"
 DATA_LOOKUP_ID = "data_lookup_id"
+DATA_LOOKUP_FIELD = "data_lookup_fied"
 DATA_VALUE = "data_value"
 
 class JMAPPER(BaseDB):
@@ -31,8 +32,8 @@ class JMAPPER(BaseDB):
 
     def _insert_json_db(self, jsonList):
         insert_statement_lookup = "INSERT INTO " + LOOKUP_TABLE + "(lookup_id, lookup_fied,lookup_fied_level) VALUES(%s, %s, %s);"
-        insert_statement_data_with_id = "INSERT INTO " + DATA_TABLE + "(data_object_id, data_lookup_id, data_value) VALUES(%s, %s, %s);"
-        insert_statement_data = "INSERT INTO " + DATA_TABLE + "(data_lookup_id, data_value) VALUES(%s, %s) RETURNING data_object_id;"
+        insert_statement_data_with_id = "INSERT INTO " + DATA_TABLE + "(data_object_id, data_lookup_id, data_lookup_fied, data_value) VALUES(%s, %s, %s, %s);"
+        insert_statement_data = "INSERT INTO " + DATA_TABLE + "(data_lookup_id, data_lookup_fied, data_value) VALUES(%s, %s, %s) RETURNING data_object_id;"
 
         connection = None
         data_object_id = None
@@ -46,9 +47,9 @@ class JMAPPER(BaseDB):
                 else:
                     if data_object_id:
                         cursor.execute(insert_statement_data_with_id,
-                                       (data_object_id, item["data_lookup_id"], item["data_value"]))
+                                       (data_object_id, item["data_lookup_id"], item["data_lookup_fied"], item["data_value"]))
                     else:
-                        cursor.execute(insert_statement_data, (item["data_lookup_id"], item["data_value"]))
+                        cursor.execute(insert_statement_data, (item["data_lookup_id"], item["data_lookup_fied"], item["data_value"]))
                         data_object_id = cursor.fetchone()[0]
 
             connection.commit()
@@ -127,7 +128,7 @@ class JMAPPER(BaseDB):
                 self.flattenJson(v, level + 1, c_prefix, lookup_field, flattenedList)
 
             else:
-                flattenedList.append({"data_lookup_id": lookup_id, "data_value": v, "type": "data"})
+                flattenedList.append({"data_lookup_id": lookup_id, "data_lookup_fied": lookup_field, "data_value": v, "type": "data"})
 
         cursor.close()
 
@@ -136,9 +137,10 @@ class JMAPPER(BaseDB):
         self.flattenJson(jObject, 0, "", None, flattenedList)
         self._insert_json_db(flattenedList)
 
-    def update_json(self, keyPath, value):
-        select_lookupid_statement = "SELECT " + LOOKUP_ID + ", " + LOOKUP_FIELD_LEVEL +" from " + LOOKUP_TABLE + " WHERE " + LOOKUP_FIELD + "=%s"
-        update_statement = "UPDATE " + DATA_TABLE + " SET "+ DATA_VALUE +" = %s WHERE "+ DATA_LOOKUP_ID +" =%s;"
+    def update_json(self, keyPath, value, conditionPath = None, conditionValue = None):
+       # select_lookupid_statement = "SELECT " + LOOKUP_ID + ", " + LOOKUP_FIELD_LEVEL +" from " + LOOKUP_TABLE + " WHERE " + LOOKUP_FIELD + "=%s"
+        select_objectid_statement = "SELECT " + DATA_OBJECT_ID + " from " + DATA_TABLE + " WHERE " + DATA_LOOKUP_FIELD + "=%s AND "+ DATA_VALUE + " =%s"
+        update_statement = "UPDATE " + DATA_TABLE + " SET "+ DATA_VALUE +" = %s WHERE "+ DATA_OBJECT_ID +" =%s;"
         
         connection = None
         try:
@@ -147,16 +149,19 @@ class JMAPPER(BaseDB):
             connection = self.get_connection()
             cursor = connection.cursor()
 
-            fieldId = self.jmapper_util.get_field_id_from_memory(keyPath)
+            #fieldId = self.jmapper_util.get_field_id_from_memory(keyPath)
             #fieldId = None
-            if fieldId is None:
-                cursor.execute(select_lookupid_statement, (keyPath, ))
-                row = cursor.fetchone()
-                if row is None:
-                    return
-                fieldId = row[0]
-
-            cursor.execute(update_statement, (value, fieldId))
+            #if fieldId is None:
+            #    cursor.execute(select_lookupid_statement, (keyPath, ))
+            #   row = cursor.fetchone()
+            #   if row is None:
+            #        return
+            #    fieldId = row[0]
+            cursor.execute(select_objectid_statement, (conditionPath, conditionValue))
+            row = cursor.fetchone()
+            if row is None:
+                return
+            cursor.execute(update_statement, (value, str(row[0])))
             cursor.close()
             connection.commit()
 
@@ -188,6 +193,7 @@ class JMAPPER(BaseDB):
                   + DATA_TABLE + " (" \
                   + DATA_OBJECT_ID + " SERIAL," \
                   + DATA_LOOKUP_ID + " INTEGER NOT NULL REFERENCES " + LOOKUP_TABLE + "(" + LOOKUP_ID + ")," \
+                  + DATA_LOOKUP_FIELD + " TEXT NOT NULL," \
                   + DATA_VALUE + " TEXT NOT NULL" \
                                  ")"
         self.execute(command=command)
@@ -196,13 +202,15 @@ class JMAPPER(BaseDB):
         logger.info("Creating indices on data and lookup tables")
 
         #b-tree index
-        create_index_statement_lookup = "CREATE INDEX " + LOOKUP_FIELD + \
+        create_index_statement_lookup = "CREATE UNIQUE INDEX " + LOOKUP_FIELD + \
                                         " ON " + LOOKUP_TABLE + \
                                         " (" + LOOKUP_FIELD + ");"
         create_index_statement_data = "CREATE INDEX " + DATA_LOOKUP_ID + \
                                       " ON " + DATA_TABLE + \
                                       " (" + DATA_LOOKUP_ID + ");"
-
+        create_index_statement_data_field = "CREATE  INDEX " + DATA_LOOKUP_FIELD + \
+                                      " ON " + DATA_TABLE + \
+                                      " (" + DATA_LOOKUP_FIELD + ");"
         #Hash index
         # create_index_statement_lookup = "CREATE INDEX " + LOOKUP_FIELD +\
         #                                 " ON " + LOOKUP_TABLE + \
@@ -216,6 +224,7 @@ class JMAPPER(BaseDB):
         try:
             self.execute(command=create_index_statement_lookup)
             self.execute(command=create_index_statement_data)
+            self.execute(command=create_index_statement_data_field)
         except Exception as error:
             logger.error("Ignoring error during Index operation {0}".format(error))
 

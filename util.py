@@ -36,18 +36,18 @@ def preprocess():
 
 def update_json(p):
     #key = random.choice(jmapper_key)
-    key = "r.ra.rab.raba"
-    JMAPPER.update_json(key, "updated_key" + key)
+    key = "r.ra.rab.raaa"
+    JMAPPER.update_json(key, "updated_key" + key, "a", "a2key")
     json_util.update_json(key.replace(".", ", "), "updated_key" + key)
 
 def run_sample_tests():
     insert_sample_json()
     update_json("q")
-    #update_concurrency_test()
+    update_concurrency_test()
 
 def update_concurrency_test():
     preprocess()
-    pool = Pool(processes=10)
+    pool = Pool(processes=100)
     arg=[]
     for i in range(202):
         arg.append("q")
