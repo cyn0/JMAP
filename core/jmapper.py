@@ -28,6 +28,59 @@ class JMAPPER(BaseDB):
         statement = "SELECT * from " + LOOKUP_TABLE + ";"
         return self.execute(statement, returnsResult=True)
 
+    def get_json(self, condition=None, condition_value=None):
+        filter_statement = "SELECT data_object_id from " + DATA_TABLE + " WHERE data_lookup_fied=%s AND data_value=%s;"
+        #select_statement = "SELECT data_lookup_fied, data_value from " + DATA_TABLE + " WHERE data_object_id=%s;"
+        select_statement = "SELECT data_object_id, data_lookup_fied, data_value from " + DATA_TABLE + " WHERE data_object_id IN %s;"
+        connection = None
+
+        try:
+            connection = self.get_connection()
+            cursor = connection.cursor()
+            cursor.execute(filter_statement, (condition, condition_value))
+            data_object_id = cursor.fetchall()
+
+            ids = tuple([tupl[0] for tupl in data_object_id ])
+            cursor.execute(select_statement, (ids, ))
+            result = cursor.fetchall()
+            cursor.close()
+            connection.commit()
+
+            jsonObject = {}
+            for item in result:
+                object_id = item[0]
+                key = item[1]
+                value = item[2]
+
+                if object_id not in jsonObject:
+                    jsonObject[object_id] = {}
+
+                curr_json = jsonObject[object_id]
+                levels = key.split(".")
+                temp=curr_json
+
+                level_count= len(levels)
+                for i in range(level_count):
+                    curr_level = levels[i]
+                    if levels[i] not in temp:
+                        if i == level_count - 1:
+                            temp[curr_level] = value
+                        else:
+                            temp[curr_level] = {}
+
+                    temp = temp[curr_level]
+
+            return [jsonObject[key] for key in jsonObject]
+
+        except (Exception, psycopg2.DatabaseError) as error:
+            logger.error("Error during DB operation {0}".format(error))
+            raise
+
+        finally:
+            if connection is not None:
+                connection.close()
+
+
     def _insert_json_db(self, jsonList):
         insert_statement_lookup = "INSERT INTO " + LOOKUP_TABLE + "(lookup_id, lookup_fied,lookup_fied_level) VALUES(%s, %s, %s);"
         insert_statement_data_with_id = "INSERT INTO " + DATA_TABLE + "(data_object_id, data_lookup_id, data_lookup_fied, data_value) VALUES(%s, %s, %s, %s);"

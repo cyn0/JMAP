@@ -46,6 +46,7 @@ def run_sample_tests():
     insert_sample_json()
     #update_json("q")
     update_concurrency_test()
+    print JMAPPER.get_json(condition="b", condition_value="updated_keyr.ra.rab.raaa")
 
 def update_concurrency_test():
     preprocess()
