@@ -46,7 +46,9 @@ class BaseDB(object):
             # cursor.close()
             connection.commit()
             elapsed_1 = timeit.default_timer() - start_time_1
-
+            postgressfd = open('postgressDocument.csv', 'a')
+            postgressfd.write(str(elapsed_1) + '\n')
+            postgressfd.close()
             logger.info("Time taken to Execute command {0}: {1}".format(command, elapsed_1))
             if shouldlogTime == True:
                 self.update_concurrency_time.append(elapsed_1)

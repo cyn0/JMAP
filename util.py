@@ -29,20 +29,22 @@ jmapper_key = []
 
 def preprocess():
     lookup_rows = JMAPPER.read_lookup(None)
-
+    print "In Preprocess ", lookup_rows
     for row in lookup_rows:
         key = str(row[1])
         jmapper_key.append(key)
 
 def update_json(p):
+    print "In update json"
+    print "jmapper_key %s", jmapper_key
     #key = random.choice(jmapper_key)
     key = "r.ra.rab.raaa"
-    JMAPPER.update_json(key, "updated_key" + key, "a", "a2key")
+    JMAPPER.update_json(key, "a2key", "a", "a2key")
     json_util.update_json(key.replace(".", ", "), "updated_key" + key)
 
 def run_sample_tests():
     insert_sample_json()
-    update_json("q")
+    #update_json("q")
     update_concurrency_test()
 
 def update_concurrency_test():
@@ -53,9 +55,5 @@ def update_concurrency_test():
         arg.append("q")
     pool.map(update_json, arg)
     print "$"*100
-    avg_jmapper = sum(JMAPPER.update_concurrency_time) /len(JMAPPER.update_concurrency_time)
-    print "Average taken by Jmapper to update 10 random rows is %s", avg_jmapper
-    avg_json = sum(JMAPPER.update_concurrency_time) /len(JMAPPER.update_concurrency_time)
-    print "Average taken by normal Postgress JSON Update to update 10 random rows is %s", avg_json
     pool.close()
     pool.join()

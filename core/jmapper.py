@@ -20,8 +20,6 @@ DATA_LOOKUP_FIELD = "data_lookup_fied"
 DATA_VALUE = "data_value"
 
 class JMAPPER(BaseDB):
-    update_concurrency_time = []
-    
     def __init__(self):
         super(JMAPPER, self).__init__()
         self.jmapper_util = JMapperUtil(self)
@@ -138,6 +136,7 @@ class JMAPPER(BaseDB):
         self._insert_json_db(flattenedList)
 
     def update_json(self, keyPath, value, conditionPath = None, conditionValue = None):
+        print "clled"
        # select_lookupid_statement = "SELECT " + LOOKUP_ID + ", " + LOOKUP_FIELD_LEVEL +" from " + LOOKUP_TABLE + " WHERE " + LOOKUP_FIELD + "=%s"
         select_objectid_statement = "SELECT " + DATA_OBJECT_ID + " from " + DATA_TABLE + " WHERE " + DATA_LOOKUP_FIELD + "=%s AND "+ DATA_VALUE + " =%s"
         update_statement = "UPDATE " + DATA_TABLE + " SET "+ DATA_VALUE +" = %s WHERE "+ DATA_OBJECT_ID +" =%s;"
@@ -157,6 +156,7 @@ class JMAPPER(BaseDB):
             #   if row is None:
             #        return
             #    fieldId = row[0]
+           
             cursor.execute(select_objectid_statement, (conditionPath, conditionValue))
             row = cursor.fetchone()
             if row is None:
@@ -167,7 +167,10 @@ class JMAPPER(BaseDB):
 
             elapsed_1 = timeit.default_timer() - start_time_1
             logger.info("Updating {0} value as {1}. Time taken to Update: JMapper: {2}".format(keyPath, value, elapsed_1))
-            self.update_concurrency_time.append(elapsed_1)
+
+            jMapperfd = open('jMapperdocument.csv', 'a')
+            jMapperfd.write(str(elapsed_1) + '\n')
+            jMapperfd.close()
         except (Exception, psycopg2.DatabaseError) as error:
             logger.error("Error during DB operation {0}".format(error))
             raise
