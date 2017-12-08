@@ -3,6 +3,7 @@ import psycopg2
 import jsoncfg
 import timeit
 import logging
+from time import gmtime, strftime
 
 logger = logging.getLogger(__name__)
 
@@ -38,20 +39,23 @@ class BaseDB(object):
         connection = None
         try:
             logger.info("About to execute command: {0}".format(command))
+
+
             start_time_1 = timeit.default_timer()
             connection = self.get_connection()
             cursor = connection.cursor()
 
             cursor.execute(command, params)
-            # cursor.close()
             connection.commit()
             elapsed_1 = timeit.default_timer() - start_time_1
-            postgressfd = open('postgressDocument.csv', 'a')
-            postgressfd.write(str(elapsed_1) + '\n')
-            postgressfd.close()
+
+            if shouldlogTime:
+                with open('postgress_update.csv', 'a') as file:
+                    file.write(str(elapsed_1) + '\n')
+
+
             logger.info("Time taken to Execute command {0}: {1}".format(command, elapsed_1))
-            if shouldlogTime == True:
-                self.update_concurrency_time.append(elapsed_1)
+
             result = []
             if returnsResult:
                 result = cursor.fetchall()

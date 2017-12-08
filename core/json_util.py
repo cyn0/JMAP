@@ -44,7 +44,7 @@ class JsonUtil(BaseDB):
         
         #UPDATE json_table SET json_data = jsonb_set(json_data, '{fabk}', '"my-other-name"');
         update_statement = "UPDATE json_table SET json_data = jsonb_set(json_data, %s, %s);"
-        self.execute(update_statement, (key, value), True)
+        self.execute(update_statement, (key, value), shouldlogTime=True)
 
     def drop_table(self):
         logger.info("Dropping json_table")
