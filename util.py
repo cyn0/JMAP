@@ -37,10 +37,10 @@ def preprocess():
 def update_json(p):
     print "In update json"
     print "jmapper_key %s", jmapper_key
-    #key = random.choice(jmapper_key)
-    key = "r.ra.rab.raaa"
-    JMAPPER.update_json(key, "a2key", "a", "a2key")
-    json_util.update_json(key.replace(".", ", "), "updated_key" + key)
+    key = random.choice(jmapper_key)
+    #key = "r.ra.rab.raaa"
+    JMAPPER.update_json(key, "a2key", "a", "a2key", "jMapper_update")
+    #json_util.update_json(key.replace(".", ", "), "updated_key" + key, "postgress_update")
 
 def run_sample_tests():
     insert_sample_json()
