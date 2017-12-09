@@ -38,13 +38,13 @@ class JsonUtil(BaseDB):
 
         self.execute(insert_statement, (json.dumps(jObject),))
 
-    def update_json(self, key, value):
+    def update_json(self, key, value, logFileName = None):
         key = "{" + key + "}"
         value = '"'+ value +'"'
         
         #UPDATE json_table SET json_data = jsonb_set(json_data, '{fabk}', '"my-other-name"');
         update_statement = "UPDATE json_table SET json_data = jsonb_set(json_data, %s, %s);"
-        self.execute(update_statement, (key, value), shouldlogTime=True)
+        self.execute(update_statement, (key, value), logFileName)
 
     def drop_table(self):
         logger.info("Dropping json_table")

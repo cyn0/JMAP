@@ -188,7 +188,7 @@ class JMAPPER(BaseDB):
         self.flattenJson(jObject, 0, "", None, flattenedList)
         self._insert_json_db(flattenedList)
 
-    def update_json(self, keyPath, value, conditionPath = None, conditionValue = None):
+    def update_json(self, keyPath, value, conditionPath = None, conditionValue = None, log_file_name = None):
        # select_lookupid_statement = "SELECT " + LOOKUP_ID + ", " + LOOKUP_FIELD_LEVEL +" from " + LOOKUP_TABLE + " WHERE " + LOOKUP_FIELD + "=%s"
         select_objectid_statement = "SELECT " + DATA_OBJECT_ID + " from " + DATA_TABLE + " WHERE " + DATA_LOOKUP_FIELD + "=%s AND "+ DATA_VALUE + " =%s"
         update_statement = "UPDATE " + DATA_TABLE + " SET "+ DATA_VALUE +" = %s WHERE "+ DATA_OBJECT_ID +" =%s;"
@@ -222,8 +222,9 @@ class JMAPPER(BaseDB):
             cursor.close()
             logger.info("Updating {0} value as {1}. Time taken to Update: JMapper: {2}".format(keyPath, value, elapsed_1))
 
-            with open('jmapper_update.csv', 'a') as file:
-                file.write(str(elapsed_1) + '\n')
+            if log_file_name is not None:
+                with open(log_file_name + '.csv', 'a') as file:
+                    file.write(str(elapsed_1) + '\n')
 
         except (Exception, psycopg2.DatabaseError) as error:
             logger.error("Error during DB operation {0}".format(error))

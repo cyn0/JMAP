@@ -38,16 +38,16 @@ def preprocess():
 def update_json(p):
     print "In update json"
     print "jmapper_key %s", jmapper_key
-    #key = random.choice(jmapper_key)
-    key = "r.ra.rab.raaa"
-    JMAPPER.update_json(key, "a2key", "a", "a2key")
-    json_util.update_json(key.replace(".", ", "), "updated_key" + key)
+    key = random.choice(jmapper_key)
+    #key = "r.ra.rab.raaa"
+    JMAPPER.update_json(key, "a2key", "a", "a2key", "jMapper_update")
+    json_util.update_json(key.replace(".", ", "), "updated_key" + key, "postgress_update")
 
 def run_sample_tests():
     insert_sample_json()
     insert_multiple_json("/Users/saranyabaskaran/JMAP/JsonData")
     #update_json("q")
-    update_concurrency_test()
+    #update_concurrency_test()
     print JMAPPER.get_json(condition="b", condition_value="updated_keyr.ra.rab.raaa")
 
 def insert_multiple_json(json_dir_name):
@@ -66,10 +66,6 @@ def insert_multiple_json(json_dir_name):
              for item in data:
                  JMAPPER.insert_json(item)
                  json_util.insert_json(item)
-             #json_data = open(file, 'r+')
-             #jdata = json.loads(json_data.read().decode("utf-8"))
-           #print "jdata: ", jdata
-
 
 def update_concurrency_test():
     preprocess()
