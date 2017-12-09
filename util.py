@@ -5,6 +5,7 @@ import timeit
 import random
 import logging
 from multiprocessing.dummy import Pool
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +45,31 @@ def update_json(p):
 
 def run_sample_tests():
     insert_sample_json()
+    insert_multiple_json("/Users/saranyabaskaran/JMAP/JsonData")
     #update_json("q")
     update_concurrency_test()
     print JMAPPER.get_json(condition="b", condition_value="updated_keyr.ra.rab.raaa")
+
+def insert_multiple_json(json_dir_name):
+     logger.info("Loading data from '{}'".format(json_dir_name))
+     dir = os.path.expanduser(json_dir_name)
+     for root, dirs, files in os.walk(dir):
+         for f in files:
+             fname = os.path.join(root, f)
+             if not fname.endswith(".json"):
+                 continue
+             with open(fname) as js:
+                 data = json.loads(js.read().decode("utf-8"))
+
+             #if files.endsWith(".json"):
+             print data
+             for item in data:
+                 JMAPPER.insert_json(item)
+                 json_util.insert_json(item)
+             #json_data = open(file, 'r+')
+             #jdata = json.loads(json_data.read().decode("utf-8"))
+           #print "jdata: ", jdata
+
 
 def update_concurrency_test():
     preprocess()
