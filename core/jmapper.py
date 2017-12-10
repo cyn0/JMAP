@@ -35,6 +35,7 @@ class JMAPPER(BaseDB):
         connection = None
 
         try:
+            start_time_1 = timeit.default_timer()
             connection = self.get_connection()
             cursor = connection.cursor()
             cursor.execute(filter_statement, (condition, condition_value))
@@ -43,7 +44,7 @@ class JMAPPER(BaseDB):
             ids = tuple([tupl[0] for tupl in data_object_id ])
             cursor.execute(select_statement, (ids, ))
             result = cursor.fetchall()
-            cursor.close()
+            # cursor.close()
             connection.commit()
 
             jsonObject = {}
@@ -70,7 +71,12 @@ class JMAPPER(BaseDB):
 
                     temp = temp[curr_level]
 
-            return [jsonObject[key] for key in jsonObject]
+            result = [jsonObject[key] for key in jsonObject]
+            elapsed_1 = timeit.default_timer() - start_time_1
+
+            with open('read_time_jmapper.csv', 'a') as file:
+                    file.write(str(elapsed_1) + '\n')
+            return result
 
         except (Exception, psycopg2.DatabaseError) as error:
             logger.error("Error during DB operation {0}".format(error))
@@ -100,6 +106,7 @@ class JMAPPER(BaseDB):
                         cursor.execute(insert_statement_data_with_id,
                                        (data_object_id, item["data_lookup_id"], item["data_lookup_fied"], item["data_value"]))
                     else:
+
                         cursor.execute(insert_statement_data, (item["data_lookup_id"], item["data_lookup_fied"], item["data_value"]))
                         data_object_id = cursor.fetchone()[0]
 
@@ -157,7 +164,6 @@ class JMAPPER(BaseDB):
 
             if result is None:
                 cur = cur + 1
-                print "In if %s", lookup_field
 
                 self.jmapper_util.incr_prefix_current_int(prefix)
                 cur_key_value = str(cur)
@@ -169,7 +175,6 @@ class JMAPPER(BaseDB):
                 lookup_id = int(c_prefix + "0" * no_of_zeros)
                 flattenedList.append({"lookup_id": lookup_id, "lookup_field": lookup_field, "type": "lookup","lookup_fied_level": level})
             else:
-                print "In else %s", lookup_field
                 lookup_id = result[0]
                 lookup_field = result[1]
                 level = result[2]
@@ -199,15 +204,6 @@ class JMAPPER(BaseDB):
             start_time_1 = timeit.default_timer()
             connection = self.get_connection()
             cursor = connection.cursor()
-
-            #fieldId = self.jmapper_util.get_field_id_from_memory(keyPath)
-            #fieldId = None
-            #if fieldId is None:
-            #    cursor.execute(select_lookupid_statement, (keyPath, ))
-            #   row = cursor.fetchone()
-            #   if row is None:
-            #        return
-            #    fieldId = row[0]
 
             cursor.execute(select_objectid_statement, (conditionPath, conditionValue))
             row = cursor.fetchone()

@@ -12,6 +12,14 @@ class JsonUtil(BaseDB):
     def __init__(self):
         super(JsonUtil, self).__init__()
 
+    def get_json(self, condition=None, condition_value=None):
+        cond = {condition:condition_value}
+
+        #select_statement="SELECT * FROM json_table WHERE json_data @> \"{0}\";".format(cond)
+        #MUST be changed
+        select_statement="SELECT * FROM json_table WHERE json_data @> '{\""+condition+"\":\""+condition_value+"\"}';"
+        print select_statement
+        return self.execute(select_statement, returnsResult=True, logFileName="read_time_json")
 
     def create_json_table(self):
         logger.info("Creating json table if not exists")
@@ -52,3 +60,4 @@ class JsonUtil(BaseDB):
 
     def preprocessing(self):
         pass
+
