@@ -217,8 +217,8 @@ class JMAPPER(BaseDB):
             ids = tuple([tupl[0] for tupl in data_object_id ])
             print "data_object_id", data_object_id
             print "ids", ids
-            if ids is None:
-                return
+            if ids is None or len(ids)==0:
+                return []
             cursor.execute(update_statement, (value, keyPath, ids))
 
             connection.commit()

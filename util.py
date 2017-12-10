@@ -41,11 +41,13 @@ def update_json(json_obj):
 
     key = random.choice(json_obj.keys())
 
+    old_cur=None
     cur = json_obj[key]
     update_path = key
     while isinstance(cur, dict):
         key = random.choice(cur.keys())
         update_path = update_path + "." + key
+        old_cur=cur
         cur = cur[key]
     print "update Path: ", update_path
 
@@ -56,12 +58,13 @@ def update_json(json_obj):
         condition_key = random.choice(json_obj.keys())
         condition_value = json_obj[condition_key]
 
-    #condition_path = condition_key
-
-
 
     print "condition path", condition_key
     print "condition value", condition_value
+    if old_cur is None:
+        json_obj[key]="sabaskar_key"
+    else:
+        old_cur[key]="sabaskar_key"
         #key = "r.ra.rab.raaa"
     JMAPPER.update_json(update_path, "sabaskar_key", condition_key, str(condition_value), "jMapper_update")
     json_util.update_json(update_path.replace(".", ", "), "updated_key" + key, "postgress_update")
@@ -117,7 +120,7 @@ def run_sample_tests():
     #update_json("q")
     update_concurrency_test()
     # print JMAPPER.get_json(condition="id", condition_value="xiq2-ahjv")
-    random_read()
+    # random_read()
 
 def insert_multiple_json(json_dir_name):
      logger.info("Loading data from '{}'".format(json_dir_name))
@@ -136,7 +139,7 @@ def insert_multiple_json(json_dir_name):
 
 def update_concurrency_test():
     preprocess()
-    pool = Pool(processes=50)
+    pool = Pool(processes=1)
 
     json_dir_name = "./JsonData"
     logger.info("Loading data from '{}'".format(json_dir_name))
@@ -157,6 +160,9 @@ def update_concurrency_test():
     print "$"*100
     pool.close()
     pool.join()
+
+    # key = random.choice(whole_data)
+    # update_json(key)
 
 def reservoir_random_sample(input, N):
     sample = []
