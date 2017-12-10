@@ -74,11 +74,12 @@ def read_json(json_object):
     print "*"*100
     print "Reading key:{0} Value:{1}".format(key, val)
     print "*" * 100
-    if isinstance(val, bool):
-        return
-    JMAPPER.get_json(condition=key, condition_value=str(val))
-
-    json_util.get_json(key,val)
+    print type(val)
+    if isinstance(val, unicode):
+        print "Executing"
+        print len(JMAPPER.get_json(condition=key, condition_value=str(val)))
+        print "#"*200
+        print len(json_util.get_json(key,val))
 
 def random_read():
     #optimise?!
@@ -101,13 +102,13 @@ def random_read():
     # print json.dumps(whole_data)
     # print "#"*100
 
-    # key = random.choice(whole_data)
-    # read_json(key)
-    pool = Pool(30)
-    arg = reservoir_random_sample(whole_data, 30)
-    pool.map(read_json, arg)
-    pool.close()
-    pool.join()
+    key = random.choice(whole_data)
+    read_json(key)
+    # pool = Pool(30)
+    # arg = reservoir_random_sample(whole_data, 30)
+    # pool.map(read_json, arg)
+    # pool.close()
+    # pool.join()
 
 def run_sample_tests():
     #insert_sample_json()

@@ -17,9 +17,10 @@ class JsonUtil(BaseDB):
 
         #select_statement="SELECT * FROM json_table WHERE json_data @> \"{0}\";".format(cond)
         #MUST be changed
-        select_statement="SELECT * FROM json_table WHERE json_data @> '{\""+condition+"\":\""+condition_value+"\"}';"
+        select_statement="SELECT json_data FROM json_table WHERE json_data @> '{\""+condition+"\":\""+condition_value+"\"}';"
         print select_statement
-        return self.execute(select_statement, returnsResult=True, logFileName="read_time_json")
+        result= self.execute(select_statement, returnsResult=True, logFileName="read_time_json")
+        return list([tupl[0] for tupl in result])
 
     def create_json_table(self):
         logger.info("Creating json table if not exists")
