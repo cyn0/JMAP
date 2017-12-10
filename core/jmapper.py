@@ -196,7 +196,7 @@ class JMAPPER(BaseDB):
     def update_json(self, keyPath, value, conditionPath = None, conditionValue = None, log_file_name = None):
        # select_lookupid_statement = "SELECT " + LOOKUP_ID + ", " + LOOKUP_FIELD_LEVEL +" from " + LOOKUP_TABLE + " WHERE " + LOOKUP_FIELD + "=%s"
         select_objectid_statement = "SELECT " + DATA_OBJECT_ID + " from " + DATA_TABLE + " WHERE " + DATA_LOOKUP_FIELD + "=%s AND "+ DATA_VALUE + " =%s"
-        update_statement = "UPDATE " + DATA_TABLE + " SET "+ DATA_VALUE +" = %s WHERE "+ DATA_OBJECT_ID +" =%s;"
+        update_statement = "UPDATE " + DATA_TABLE + " SET "+ DATA_VALUE +" = %s WHERE data_lookup_fied = %s AND "+ DATA_OBJECT_ID +" IN %s;"
         
         connection = None
         try:
@@ -206,11 +206,20 @@ class JMAPPER(BaseDB):
             cursor = connection.cursor()
 
             cursor.execute(select_objectid_statement, (conditionPath, conditionValue))
-            row = cursor.fetchone()
-            if row is None:
-                return
 
-            cursor.execute(update_statement, (value, str(row[0])))
+            data_object_id = cursor.fetchall()
+
+            print select_objectid_statement;
+            print update_statement;
+
+
+
+            ids = tuple([tupl[0] for tupl in data_object_id ])
+            print "data_object_id", data_object_id
+            print "ids", ids
+            if ids is None:
+                return
+            cursor.execute(update_statement, (value, keyPath, ids))
 
             connection.commit()
 

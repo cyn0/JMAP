@@ -32,13 +32,39 @@ def preprocess():
         key = str(row[1])
         jmapper_key.append(key)
 
-def update_json(p):
-    print "In update json"
-    print "jmapper_key %s", jmapper_key
-    key = random.choice(jmapper_key)
-    #key = "r.ra.rab.raaa"
-    JMAPPER.update_json(key, "a2key", "a", "a2key", "jMapper_update")
-    json_util.update_json(key.replace(".", ", "), "updated_key" + key, "postgress_update")
+def update_json(json_obj):
+    #print "In update json"
+    #print "jmapper_key %s", jmapper_key
+    #curr_json_obj = random.choice(json_obj)
+    #print "curr_json_object", json_obj
+    #print "Json_object", curr_json_obj
+
+    key = random.choice(json_obj.keys())
+
+    cur = json_obj[key]
+    update_path = key
+    while isinstance(cur, dict):
+        key = random.choice(cur.keys())
+        update_path = update_path + "." + key
+        cur = cur[key]
+    print "update Path: ", update_path
+
+    condition_key = random.choice(json_obj.keys())
+    condition_value =  json_obj[condition_key]
+
+    while isinstance(condition_value, dict):
+        condition_key = random.choice(json_obj.keys())
+        condition_value = json_obj[condition_key]
+
+    #condition_path = condition_key
+
+
+
+    print "condition path", condition_key
+    print "condition value", condition_value
+        #key = "r.ra.rab.raaa"
+    JMAPPER.update_json(update_path, "sabaskar_key", condition_key, str(condition_value), "jMapper_update")
+    json_util.update_json(update_path.replace(".", ", "), "updated_key" + key, "postgress_update")
 
 
 def read_json(json_object):
@@ -84,10 +110,11 @@ def random_read():
     pool.join()
 
 def run_sample_tests():
-    # insert_sample_json()
-    # insert_multiple_json("./JsonData")
+    #insert_sample_json()
+    insert_multiple_json("./JsonData")
+    #preprocess()
     #update_json("q")
-    #update_concurrency_test()
+    update_concurrency_test()
     # print JMAPPER.get_json(condition="id", condition_value="xiq2-ahjv")
     random_read()
 
@@ -108,10 +135,23 @@ def insert_multiple_json(json_dir_name):
 
 def update_concurrency_test():
     preprocess()
-    pool = Pool(processes=100)
-    arg=[]
-    for i in range(202):
-        arg.append("q")
+    pool = Pool(processes=50)
+
+    json_dir_name = "./JsonData"
+    logger.info("Loading data from '{}'".format(json_dir_name))
+    dir = os.path.expanduser(json_dir_name)
+
+    whole_data = []
+    for root, dirs, files in os.walk(dir):
+        for f in files:
+            fname = os.path.join(root, f)
+            if not fname.endswith(".json"):
+                continue
+            with open(fname) as js:
+                data = json.loads(js.read().decode("utf-8"))
+
+            whole_data = whole_data + data
+    arg = reservoir_random_sample(whole_data, 30)
     pool.map(update_json, arg)
     print "$"*100
     pool.close()
