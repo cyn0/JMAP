@@ -117,12 +117,12 @@ def random_read(num_process=1):
     arg=[]
 
     #random sample 1000 items
-    # arg = reservoir_random_sample(whole_data, 100)
+    arg = reservoir_random_sample(whole_data, 100)
 
     #one json 1000 times
-    random_obj = random.choice(whole_data)
-    for i in range(1000):
-        arg.append(random_obj)
+    # random_obj = random.choice(whole_data)
+    # for i in range(1000):
+    #     arg.append(random_obj)
 
     pool = Pool(processes=num_process)
     pool.map(read_json_jmapper, arg)
@@ -192,11 +192,11 @@ def update_concurrency_test(num_process=1):
             whole_data = whole_data + data
 
     arg = []
-    # arg = reservoir_random_sample(whole_data, 500)
+    arg = reservoir_random_sample(whole_data, 500)
 
-    random_obj = random.choice(whole_data)
-    for i in range(500):
-        arg.append(random_obj)
+    # random_obj = random.choice(whole_data)
+    # for i in range(500):
+    #     arg.append(random_obj)
 
     pool = Pool(processes=1)
     pool.map(update_json, arg)
