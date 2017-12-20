@@ -28,6 +28,10 @@ For the purpose of test case, JMapper uses all the JSON dataset located in ./Jso
 python json_mapper.py -t NUMBER -p PROCESS_COUNT
 ```
 If NUMBER = 1, all test cases, Insert, read and update
+
    NUMBER = 2, Insert of all JSON
+   
    NUMBER = 3, Random read of JSON
+   
    NUMBER = 4, Random update of JSON
+   
