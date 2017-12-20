@@ -35,11 +35,10 @@ class BaseDB(object):
                                       port=db_config.port_num())
         return connection
 
-    def execute(self, command, params=None, shouldlogTime=False, returnsResult=False):
+    def execute(self, command, params=None, logFileName=None, returnsResult=False):
         connection = None
         try:
-            logger.info("About to execute command: {0}".format(command))
-
+            # logger.info("About to execute command: {0}".format(command))
 
             start_time_1 = timeit.default_timer()
             connection = self.get_connection()
@@ -49,12 +48,11 @@ class BaseDB(object):
             connection.commit()
             elapsed_1 = timeit.default_timer() - start_time_1
 
-            if shouldlogTime:
-                with open('postgress_update.csv', 'a') as file:
+            if logFileName is not None:
+                with open(logFileName + '.csv', 'a') as file:
                     file.write(str(elapsed_1) + '\n')
 
-
-            logger.info("Time taken to Execute command {0}: {1}".format(command, elapsed_1))
+            # logger.info("Time taken to Execute command {0}: {1}".format(command, elapsed_1))
 
             result = []
             if returnsResult:

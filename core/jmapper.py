@@ -2,6 +2,7 @@ from base_db import BaseDB
 import psycopg2
 import timeit
 import logging
+import threading
 
 from jmapper_util import JMapperUtil
 from jmapper_util import ID_LENGTH
@@ -23,6 +24,7 @@ class JMAPPER(BaseDB):
     def __init__(self):
         super(JMAPPER, self).__init__()
         self.jmapper_util = JMapperUtil(self)
+        self.lock = threading.Lock()
 
     def read_lookup(self, filter):
         statement = "SELECT * from " + LOOKUP_TABLE + ";"
@@ -35,6 +37,7 @@ class JMAPPER(BaseDB):
         connection = None
 
         try:
+            start_time_1 = timeit.default_timer()
             connection = self.get_connection()
             cursor = connection.cursor()
             cursor.execute(filter_statement, (condition, condition_value))
@@ -43,34 +46,36 @@ class JMAPPER(BaseDB):
             ids = tuple([tupl[0] for tupl in data_object_id ])
             cursor.execute(select_statement, (ids, ))
             result = cursor.fetchall()
-            cursor.close()
+            # cursor.close()
             connection.commit()
 
             jsonObject = {}
             for item in result:
-                object_id = item[0]
-                key = item[1]
-                value = item[2]
-
+                object_id, key, value = item
                 if object_id not in jsonObject:
                     jsonObject[object_id] = {}
 
-                curr_json = jsonObject[object_id]
-                levels = key.split(".")
-                temp=curr_json
+                temp = jsonObject[object_id]
+                fields = key.split(".")
 
-                level_count= len(levels)
-                for i in range(level_count):
-                    curr_level = levels[i]
-                    if levels[i] not in temp:
+                level_count = len(fields)
+                for i, field in enumerate(fields):
+                    if field not in temp:
                         if i == level_count - 1:
-                            temp[curr_level] = value
+                            temp[field] = value
                         else:
-                            temp[curr_level] = {}
+                            temp[field] = {}
 
-                    temp = temp[curr_level]
+                    temp = temp[field]
 
-            return [jsonObject[key] for key in jsonObject]
+            elapsed_1 = timeit.default_timer() - start_time_1
+
+            result = [jsonObject[key] for key in jsonObject]
+
+            with open('read_jmapper.csv', 'a') as file:
+                    file.write(str(elapsed_1) + '\n')
+
+            return result
 
         except (Exception, psycopg2.DatabaseError) as error:
             logger.error("Error during DB operation {0}".format(error))
@@ -94,12 +99,14 @@ class JMAPPER(BaseDB):
             for item in jsonList:
                 #logger.info("Inserting {0}".format(item))
                 if item["type"] == "lookup":
+                    # print (item["lookup_id"], item["lookup_field"], item["lookup_fied_level"])
                     cursor.execute(insert_statement_lookup, (item["lookup_id"], item["lookup_field"], item["lookup_fied_level"]))
                 else:
                     if data_object_id:
                         cursor.execute(insert_statement_data_with_id,
                                        (data_object_id, item["data_lookup_id"], item["data_lookup_fied"], item["data_value"]))
                     else:
+
                         cursor.execute(insert_statement_data, (item["data_lookup_id"], item["data_lookup_fied"], item["data_value"]))
                         data_object_id = cursor.fetchone()[0]
 
@@ -141,10 +148,10 @@ class JMAPPER(BaseDB):
     def flattenJson(self, jsonObject, level, prefix, file_name_prefix, flattenedList):
         statement = "SELECT * from " + LOOKUP_TABLE + " WHERE lookup_fied=%s;"
 
-        cur = self.jmapper_util.get_prefix_current_int(prefix)
-
         connection = self.get_connection()
         cursor = connection.cursor()
+
+        cur = self.jmapper_util.get_prefix_current_int(prefix)
 
         for k, v in jsonObject.iteritems():
             lookup_field =  self.jmapper_util.append_field_path(file_name_prefix, k)
@@ -157,7 +164,6 @@ class JMAPPER(BaseDB):
 
             if result is None:
                 cur = cur + 1
-                print "In if %s", lookup_field
 
                 self.jmapper_util.incr_prefix_current_int(prefix)
                 cur_key_value = str(cur)
@@ -169,7 +175,6 @@ class JMAPPER(BaseDB):
                 lookup_id = int(c_prefix + "0" * no_of_zeros)
                 flattenedList.append({"lookup_id": lookup_id, "lookup_field": lookup_field, "type": "lookup","lookup_fied_level": level})
             else:
-                print "In else %s", lookup_field
                 lookup_id = result[0]
                 lookup_field = result[1]
                 level = result[2]
@@ -181,17 +186,29 @@ class JMAPPER(BaseDB):
             else:
                 flattenedList.append({"data_lookup_id": lookup_id, "data_lookup_fied": lookup_field, "data_value": v, "type": "data"})
 
+
         cursor.close()
 
     def insert_json(self, jObject):
+        start_time_1 = timeit.default_timer()
+
+        self.lock.acquire()
+
         flattenedList = []
         self.flattenJson(jObject, 0, "", None, flattenedList)
-        self._insert_json_db(flattenedList)
 
-    def update_json(self, keyPath, value, conditionPath = None, conditionValue = None):
+        self.lock.release()
+
+        self._insert_json_db(flattenedList)
+        elapsed_1 = timeit.default_timer() - start_time_1
+
+        with open('insert_jmapper.csv', 'a') as file:
+            file.write(str(elapsed_1) + '\n')
+
+    def update_json(self, keyPath, value, conditionPath = None, conditionValue = None, log_file_name = None):
        # select_lookupid_statement = "SELECT " + LOOKUP_ID + ", " + LOOKUP_FIELD_LEVEL +" from " + LOOKUP_TABLE + " WHERE " + LOOKUP_FIELD + "=%s"
         select_objectid_statement = "SELECT " + DATA_OBJECT_ID + " from " + DATA_TABLE + " WHERE " + DATA_LOOKUP_FIELD + "=%s AND "+ DATA_VALUE + " =%s"
-        update_statement = "UPDATE " + DATA_TABLE + " SET "+ DATA_VALUE +" = %s WHERE "+ DATA_OBJECT_ID +" =%s;"
+        update_statement = "UPDATE " + DATA_TABLE + " SET "+ DATA_VALUE +" = %s WHERE data_lookup_fied = %s AND "+ DATA_OBJECT_ID +" IN %s;"
         
         connection = None
         try:
@@ -200,30 +217,24 @@ class JMAPPER(BaseDB):
             connection = self.get_connection()
             cursor = connection.cursor()
 
-            #fieldId = self.jmapper_util.get_field_id_from_memory(keyPath)
-            #fieldId = None
-            #if fieldId is None:
-            #    cursor.execute(select_lookupid_statement, (keyPath, ))
-            #   row = cursor.fetchone()
-            #   if row is None:
-            #        return
-            #    fieldId = row[0]
-
             cursor.execute(select_objectid_statement, (conditionPath, conditionValue))
-            row = cursor.fetchone()
-            if row is None:
-                return
 
-            cursor.execute(update_statement, (value, str(row[0])))
+            data_object_id = cursor.fetchall()
+
+            ids = tuple([tupl[0] for tupl in data_object_id ])
+            if ids is None or len(ids)==0:
+                return []
+            cursor.execute(update_statement, (value, keyPath, ids))
 
             connection.commit()
 
             elapsed_1 = timeit.default_timer() - start_time_1
             cursor.close()
-            logger.info("Updating {0} value as {1}. Time taken to Update: JMapper: {2}".format(keyPath, value, elapsed_1))
+            # logger.info("Updating {0} value as {1}. Time taken to Update: JMapper: {2}".format(keyPath, value, elapsed_1))
 
-            with open('jmapper_update.csv', 'a') as file:
-                file.write(str(elapsed_1) + '\n')
+            if log_file_name is not None:
+                with open(log_file_name + '.csv', 'a') as file:
+                    file.write(str(elapsed_1) + '\n')
 
         except (Exception, psycopg2.DatabaseError) as error:
             logger.error("Error during DB operation {0}".format(error))
@@ -287,10 +298,10 @@ class JMAPPER(BaseDB):
 
     def drop_table(self):
         logger.info("Dropping lookup_table")
-        self.execute("DROP TABLE lookup_table CASCADE;")
+        # self.execute("DROP TABLE lookup_table CASCADE;")
 
         logger.info("Dropping data_table")
-        self.execute("DROP TABLE data_table;")
+        # self.execute("DROP TABLE data_table;")
 
     def preprocessing(self):
         self.jmapper_util.build_memory_lookup()
