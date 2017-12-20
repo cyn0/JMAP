@@ -1,6 +1,7 @@
 from base_db import BaseDB
 import logging
 import json
+import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -12,14 +13,14 @@ class JsonUtil(BaseDB):
     def __init__(self):
         super(JsonUtil, self).__init__()
 
+
     def get_json(self, condition=None, condition_value=None):
         cond = {condition:condition_value}
 
         #select_statement="SELECT * FROM json_table WHERE json_data @> \"{0}\";".format(cond)
         #MUST be changed
         select_statement="SELECT json_data FROM json_table WHERE json_data @> '{\""+condition+"\":\""+condition_value+"\"}';"
-        print select_statement
-        result= self.execute(select_statement, returnsResult=True, logFileName="read_time_json")
+        result= self.execute(select_statement, returnsResult=True, logFileName="read_json")
         return list([tupl[0] for tupl in result])
 
     def create_json_table(self):
@@ -42,10 +43,15 @@ class JsonUtil(BaseDB):
             logger.error("Ignoring error during Index operation {0}".format(error))
 
     def insert_json(self, jObject):
-        logger.info("Inserting {0}".format(jObject))
+        # logger.info("Inserting {0}".format(jObject))
+        start_time_1 = timeit.default_timer()
         insert_statement = "INSERT INTO " + JSON_TABLE + "(json_data) VALUES(%s) RETURNING json_id;"
 
         self.execute(insert_statement, (json.dumps(jObject),))
+        elapsed_1 = timeit.default_timer() - start_time_1
+
+        with open('insert_json.csv', 'a') as file:
+            file.write(str(elapsed_1) + '\n')
 
     def update_json(self, key, value, logFileName = None):
         key = "{" + key + "}"

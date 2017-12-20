@@ -1,0 +1,38 @@
+myproject=> SELECT
+myproject->    relname as "Table",
+myproject->    pg_size_pretty(pg_total_relation_size(relid)) As "Size",
+myproject->    pg_size_pretty(pg_total_relation_size(relid) - pg_relation_size(relid)) as "External Size"
+myproject->    FROM pg_catalog.pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC;
+     Table     |    Size    | External Size
+---------------+------------+---------------
+ data_table    | 93 MB      | 48 kB
+ json_table    | 54 MB      | 2248 kB
+ data_table1   | 2136 kB    | 32 kB
+ json_table1   | 1496 kB    | 32 kB
+ data_table3   | 960 kB     | 32 kB
+ data_table2   | 960 kB     | 32 kB
+ json_table3   | 576 kB     | 32 kB
+ json_table2   | 536 kB     | 32 kB
+ lookup_table  | 48 kB      | 40 kB
+ lookup_table1 | 32 kB      | 24 kB
+ lookup_table3 | 32 kB      | 24 kB
+ lookup_table2 | 32 kB      | 24 kB
+ books         | 16 kB      | 8192 bytes
+ temp1         | 8192 bytes | 0 bytes
+ temp          | 8192 bytes | 0 bytes
+
+
+
+ myproject=> SELECT
+   relname as "Table",
+   pg_size_pretty(pg_total_relation_size(relid)) As "Size",
+   pg_size_pretty(pg_total_relation_size(relid) - pg_relation_size(relid)) as "External Size"
+   FROM pg_catalog.pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC;
+     Table     |    Size    | External Size
+---------------+------------+---------------
+ data_table3   | 1960 kB    | 1032 kB
+ json_table3   | 576 kB     | 72 kB
+ lookup_table3 | 48 kB      | 40 kB
+ books         | 16 kB      | 8192 bytes
+ temp          | 8192 bytes | 0 bytes
+ temp1         | 8192 bytes | 0 bytes
